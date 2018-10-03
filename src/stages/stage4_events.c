@@ -72,200 +72,6 @@ int stage4_splasher(Enemy *e, int t) {
 	return 1;
 }
 
-int stage4_fodder(Enemy *e, int t) {
-	TIMER(&t);
-	AT(EVENT_KILLED) {
-		spawn_items(e->pos, Power, 1, NULL);
-		return 1;
-	}
-
-	if(creal(e->args[0]) != 0)
-		e->moving = true;
-	e->dir = creal(e->args[0]) < 0;
-	e->pos += e->args[0];
-
-	FROM_TO(100, 200, 22-global.diff*3) {
-		play_sound_ex("shot3",5,false);
-		PROJECTILE("ball", e->pos, RGB(1, 0.3, 0.5), asymptotic, {
-			2*cexp(I*M_PI*2*frand()),
-			3
-		});
-	}
-
-	return 1;
-}
-
-
-int stage4_partcircle(Enemy *e, int t) {
-	TIMER(&t);
-	AT(EVENT_KILLED) {
-		spawn_items(e->pos, Point, 2, Power, 1, NULL);
-		return 1;
-	}
-
-	e->pos += e->args[0];
-
-	FROM_TO(30,60,1) {
-		e->args[0] *= 0.9;
-	}
-
-	FROM_TO(60,76,1) {
-		int i;
-		for(i = 0; i < global.diff; i++) {
-			play_sound("shot2");
-			complex n = cexp(I*M_PI/16.0*_i + I*carg(e->args[0])-I*M_PI/4.0 + 0.01*I*i*(1-2*(creal(e->args[0]) > 0)));
-			PROJECTILE("wave", e->pos + (30)*n, RGB(1-0.2*i,0.5,0.7), asymptotic, { 2*n, 2+2*i });
-		}
-	}
-
-	FROM_TO(160, 200, 1)
-		e->args[0] += 0.05*I;
-
-	return 1;
-}
-
-int stage4_cardbuster(Enemy *e, int t) {
-	TIMER(&t);
-	AT(EVENT_KILLED) {
-		spawn_items(e->pos, Point, 1, Power, 2, NULL);
-		return 1;
-	}
-
-	FROM_TO(0, 120, 1)
-		e->pos += (e->args[0]-e->pos0)/120.0;
-
-	FROM_TO(200, 300, 1)
-		e->pos += (e->args[1]-e->args[0])/100.0;
-
-	FROM_TO(400, 600, 1)
-		e->pos += (e->args[2]-e->args[1])/200.0;
-
-	int c = 40;
-	complex n = cexp(I*carg(global.plr.pos - e->pos) + 4*M_PI/(c+1)*I*_i);
-
-	FROM_TO_SND("shot1_loop", 120, 120+c*global.diff, 1) {
-		if(_i&1)
-			PROJECTILE("card", e->pos + 30*n, RGB(0, 0.8, 0.2), accelerated, { (0.8+0.2*global.diff)*n, 0.01*(1+0.01*_i)*n });
-	}
-
-	FROM_TO_SND("shot1_loop", 300, 320+20*global.diff, 1) {
-		PROJECTILE("card", e->pos + 30*n, RGB(0, 0.7, 0.5), asymptotic, { (0.8+0.2*global.diff)*n, 0.4*I });
-	}
-
-	return 1;
-}
-
-int stage4_backfire(Enemy *e, int t) {
-	TIMER(&t);
-	AT(EVENT_KILLED) {
-		spawn_items(e->pos, Point, 3, Power, 2, NULL);
-		return 1;
-	}
-
-	FROM_TO(0,20,1)
-		e->args[0] -= 0.05*I;
-
-	FROM_TO(60,100,1)
-		e->args[0] += 0.05*I;
-
-	if(t > 100)
-		e->args[0] -= 0.02*I;
-
-
-	e->pos += e->args[0];
-
-	FROM_TO(20,180+global.diff*20,2) {
-		play_sound("shot2");
-		complex n = cexp(I*M_PI*frand()-I*copysign(M_PI/2.0, creal(e->args[0])));
-		int i;
-		for(i = 0; i < global.diff; i++)
-			PROJECTILE("wave", e->pos, RGB(0.2, 0.2, 1-0.2*i), asymptotic, { 2*n, 2+2*i });
-	}
-
-	return 1;
-}
-
-int stage4_bigcircle(Enemy *e, int t) {
-	TIMER(&t);
-	AT(EVENT_KILLED) {
-		spawn_items(e->pos, Point, 1, Power, 3, NULL);
-
-		return 1;
-	}
-
-	FROM_TO(0, 70, 1)
-		e->pos += e->args[0];
-
-	FROM_TO(200, 300, 1)
-		e->pos -= e->args[0];
-
-
-	FROM_TO(80,100+30*global.diff,20) {
-		play_sound("shot_special1");
-		int i;
-		int n = 10+3*global.diff;
-		for(i = 0; i < n; i++) {
-			PROJECTILE(
-				.sprite = "bigball",
-				.pos = e->pos,
-				.color = RGBA(0, 0.8 - 0.4 * _i, 0, 0),
-				.rule = asymptotic,
-				.args = {
-					2*cexp(2.0*I*M_PI/n*i+I*3*_i),
-					3*sin(6*M_PI/n*i)
-				},
-			);
-
-			if(global.diff > D_Easy) {
-				PROJECTILE(
-					.sprite = "ball",
-					.pos = e->pos,
-					.color = RGBA(0, 0.3 * _i, 0.4, 0),
-					.rule = asymptotic,
-					.args = {
-						(1.5+global.diff*0.2)*cexp(I*3*(i+frand())),
-						I*5*sin(6*M_PI/n*i)
-					},
-				);
-			}
-		}
-	}
-	return 1;
-}
-
-int stage4_explosive(Enemy *e, int t) {
-	if(t == EVENT_KILLED || (t >= 100 && global.diff >= D_Normal)) {
-		int i;
-
-		if(t == EVENT_KILLED)
-			spawn_items(e->pos, Power, 1, NULL);
-
-		int n = 10*global.diff;
-		complex phase = global.plr.pos-e->pos;
-		phase /= cabs(phase);
-
-		for(i = 0; i < n; i++) {
-			double angle = 2*M_PI*i/n+carg(phase);
-			PROJECTILE(
-				.sprite = "ball",
-				.pos = e->pos,
-				.color = RGB(0.1+0.6*(i&1), 0.2, 1-0.6*(i&1)),
-				.rule = accelerated,
-				.args = {
-					1.5*(1.1+0.3*global.diff)*cexp(I*angle),
-					0.001*cexp(I*angle)
-				}
-			);
-		}
-
-		play_sound("shot1");
-		return ACTION_DESTROY;
-	}
-
-	e->pos += e->args[0];
-
-	return 1;
-}
 
 void KurumiSlave(Enemy *e, int t, bool render) {
 	if(render) {
@@ -1416,6 +1222,191 @@ static int scythe_post_mid(Enemy *e, int t) {
 
 void stage4_skip(int t);
 
+static void squad_move(Enemy *e, int t, complex (*path)(double t, complex pos0, complex *args)) {
+	complex x = path(t/100.0, creal(e->pos0)/VIEWPORT_W-0.5 + I*cimag(e->pos0)/VIEWPORT_W-0.5*I, e->args);
+	e->args[3] = e->pos;
+	e->pos = VIEWPORT_W*creal(x+0.5)+I*VIEWPORT_W*cimag(x+0.5*I);
+	e->args[3] = e->pos - e->args[3];
+
+	e->moving = abs(creal(e->args[3])) > 0.5;
+	e->dir = creal(e->args[3]) < 0;
+}
+
+static complex path_squad(double t, complex pos0, complex *args) {
+	t *= 0.6;
+	return -0.3*I - 2.3*(1.2-t)*args[1]*0.2*cexp(-M_PI*I*t*args[1]);
+}
+
+static int stage4_squad(Enemy *e, int t) {
+	int idx = creal(e->args[0]);
+	if(t == EVENT_BIRTH) {
+		if(idx == 0) {
+			e->visual_rule = BigFairy;
+			e->hp += 1000;
+		}
+	}
+	if(t < 0) {
+		return ACTION_ACK;
+	}
+
+	TIMER(&t);
+
+	squad_move(e, t, path_squad);
+
+	int timescale = 100;
+
+	if(t > timescale * 4)
+		return ACTION_DESTROY;
+		
+	FROM_TO(timescale, timescale*4, 40) {
+		play_sound("shot2");
+		int c = 3;
+		for(int i = 0; i < c; i++) {
+			PROJECTILE(
+				.sprite = "ball",
+				.pos = e->pos,
+				.rule = linear,
+				.color = RGBA(0.6,0.2,0.5,1),
+				.args = {
+					-e->args[3]*cexp(I*(i-c/2)*0.1*(idx+0.3*_i))/cabs(e->args[3]) * 3,
+				}
+				);
+		}
+	}
+
+	return ACTION_NONE;
+}
+
+static complex path_swirlster(double t, complex pos0, complex *args) {
+	t *= 2;
+	return pos0+args[1]*(0.4*t+I*0.05*sin(4*t));
+}
+
+static int stage4_swirlster(Enemy *e, int t) {
+	int idx = creal(e->args[0]);
+	if(t < 0) {
+		return ACTION_ACK;
+	}
+
+	TIMER(&t);
+
+	squad_move(e, t, path_swirlster);
+
+	FROM_TO_INT(60, 1000, 60, 80, 30) {
+		play_sound("shot3");
+		int c = 4;
+		for(int i = 0; i < c; i++) {
+			PROJECTILE(
+				.sprite = "card",
+				.color = RGB(0.2,0.8-0.2*_ni,0.5),
+				.pos = e->pos,
+				.rule = asymptotic,
+				.args = {
+					1*cexp(2*M_PI*I/c*(i+0.1*idx)),
+					5+2*I,
+				},
+			);
+		}
+	}
+	return ACTION_NONE;
+}
+
+static complex path_showreel(double t, complex pos0, complex *args) {
+	return -0.5*I+(pos0+0.5*I)*cexp(I*1.5*t*args[1]);
+}
+
+static int stage4_showreel(Enemy *e, int t) {
+	int idx = creal(e->args[0]);
+	if(t == EVENT_BIRTH && idx == 0) {
+		e->visual_rule = BigFairy;
+	}
+	if(t < 0) {
+		return ACTION_ACK;
+	}
+	
+
+	TIMER(&t);
+
+	squad_move(e, t, path_showreel);
+
+	FROM_TO_INT_SND("shot1_loop",60, 1000, 60, 80, 8) {
+		
+		int c = 1;
+		for(int i = 0; i < c; i++) {
+			complex dir = e->args[3]/cabs(e->args[3])*cexp(2*M_PI*I/c*(i+0.1*idx));
+			PROJECTILE(
+				.sprite = _ni&1 ? "ball" : "bigball",
+				.color = RGB(0.0,0.5+0.02*_ni,0.8-0.01*_ni),
+				.pos = e->pos,
+				.rule = asymptotic,
+				.args = {
+					2*dir,
+					2*(1+I)*dir,
+				},
+			);
+		}
+	}
+	return ACTION_NONE;
+}
+
+static int stage4_memefairy(Enemy *e, int t) {
+	if(t < 0)
+		return ACTION_ACK;
+	
+	TIMER(&t);
+
+	int start = 200;
+	int end = start+500;
+	if(t < start)
+		e->pos += e->args[1]/2;
+	if(t > end)
+		e->pos += e->args[1]*1.2;
+
+	AT(end)
+		e->hp = 7000;
+	FROM_TO_SND("shot1_loop", start, 10000, 10) {
+		int c = 3*e->args[0];
+		for(int sign = -1; sign <= 1; sign += 2) {
+			for(int i = 0; i < c; i++) {
+				complex offset = cexp(I*2*M_PI/c*i+0.01*I*t);
+
+				complex aim = cexp(2*M_PI*I*frand());
+
+
+				if(i % 3 == 0 && _i % 4 == 0) {
+					play_sound("redirect");
+					PROJECTILE(
+						.sprite = "bigball",
+						.pos = e->pos,
+						.color = RGBA(0.5, 0.1, 0.7, 0),
+						.rule = linear,
+						.args = {
+							offset*aim*(2+0.04*sign*I),
+						}
+					);
+				} else {
+					PROJECTILE(
+						.sprite = "card",
+						.pos = e->pos,
+						.color = RGBA(0.2, 0.7-0.2*(i&1), 1-0.001*_i, 0),
+						.rule = accelerated,
+						.args = {
+							3*offset,
+							0.01*offset*I*sign,
+						}
+					);
+				}
+					
+			}
+		}
+
+		
+	}
+
+
+	return ACTION_NONE;
+}
+
 void stage4_events(void) {
 	TIMER(&global.timer);
 
@@ -1429,33 +1420,31 @@ void stage4_events(void) {
 		create_enemy1c(VIEWPORT_W + VIEWPORT_H/4*3*I, 3000, BigFairy, stage4_splasher, -3-4.0*I);
 	}
 
-	FROM_TO(300, 450, 20) {
-		create_enemy1c(VIEWPORT_W*frand(), 200, Fairy, stage4_fodder, 3.0*I);
+	FROM_TO(580, 780, 20) {
+		for(int sign = -1; sign <= 1; sign += 2) {
+			create_enemy2c(0, 2500, Fairy, stage4_squad, _i, sign);
+		}
 	}
 
-	FROM_TO(500, 550, 10) {
-		int d = _i&1;
-		create_enemy1c(VIEWPORT_W*d, 1000, Fairy, stage4_partcircle, 2*cexp(I*M_PI/2.0*(0.2+0.6*frand()+d)));
+	for(int direction = -1; direction <= 1; direction += 2) { // enlightenment
+		for(int wave = 0; wave < 4; wave++) { // my soul has fused with stage.h
+			FROM_TO(1200+100*wave+100*(direction+1), 1400+100*wave+100*(direction+1), 20) {
+				double x = -20;
+				if(direction < 0)
+					x = VIEWPORT_W-x;
+				create_enemy2c(x+100*I*wave, 1000, Swirl, stage4_swirlster, _i, direction+0.3*I);
+			}
+
+			FROM_TO(1950+30*wave, 2500, 30) {
+				double x = direction*(150 + 2*(50*wave+15*direction));
+				create_enemy2c(VIEWPORT_W/2+x-40*I, 1000, Fairy, stage4_showreel, _i, direction);
+			}
+				
+		}
 	}
 
-	FROM_TO(600, 1400, 100) {
-		create_enemy3c(VIEWPORT_W/4.0 + VIEWPORT_W/2.0*(_i&1), 3000, BigFairy, stage4_cardbuster, VIEWPORT_W/6.0 + VIEWPORT_W/3.0*2*(_i&1)+100.0*I,
-					VIEWPORT_W/4.0 + VIEWPORT_W/2.0*((_i+1)&1)+300.0*I, VIEWPORT_W/2.0+VIEWPORT_H*I+200.0*I);
-	}
-
-	AT(1800) {
-		create_enemy1c(VIEWPORT_H/2.0*I, 2000, Swirl, stage4_backfire, 0.3);
-		create_enemy1c(VIEWPORT_W+VIEWPORT_H/2.0*I, 2000, Swirl, stage4_backfire, -0.5);
-	}
-
-	FROM_TO(2000, 2600, 20)
-		create_enemy1c(300.0*I*frand(), 200, Fairy, stage4_fodder, 2);
-
-	FROM_TO(2000, 2400, 200)
-		create_enemy1c(VIEWPORT_W/2+200-400*frand(), 1000, BigFairy, stage4_bigcircle, 2.0*I);
-
-	FROM_TO(2600, 3000, 10)
-		create_enemy1c(20.0*I+VIEWPORT_H/3*I*frand()+VIEWPORT_W, 100, Swirl, stage4_explosive, -3);
+	AT(2250)
+		create_enemy2c(VIEWPORT_W/2-50*I, ENEMY_IMMUNE, BigFairy, stage4_memefairy, 4, I);
 
 	AT(3200)
 		global.boss = create_kurumi_mid();
@@ -1475,21 +1464,6 @@ void stage4_events(void) {
 	}
 
 	FROM_TO(3201 + midboss_time, 3601 + midboss_time, 10)
-		create_enemy1c(VIEWPORT_W*(_i&1)+VIEWPORT_H/2*I-300.0*I*frand(), 200, Fairy, stage4_fodder, 2-4*(_i&1)+1.0*I);
-
-	FROM_TO(3350 + midboss_time, 4000 + midboss_time, 100)
-		create_enemy3c(VIEWPORT_W/4.0 + VIEWPORT_W/2.0*(_i&1), 3000, BigFairy, stage4_cardbuster, VIEWPORT_W/2.+VIEWPORT_W*0.4*(1-2*(_i&1))+100.0*I,
-					VIEWPORT_W/4.0+VIEWPORT_W/2.0*((_i+1)&1)+300.0*I, VIEWPORT_W/2.0-200.0*I);
-
-	AT(3800 + midboss_time)
-		create_enemy1c(VIEWPORT_W/2, 9000, BigFairy, stage4_supercard, 4.0*I);
-
-	FROM_TO(4300 + midboss_time, 4600 + midboss_time, 95-10*global.diff)
-		create_enemy1c(VIEWPORT_W*(_i&1)+100*I, 200, Swirl, stage4_backfire, frand()*(1-2*(_i&1)));
-
-	FROM_TO(4800 + midboss_time, 5200 + midboss_time, 10)
-		create_enemy1c(20.0*I+I*VIEWPORT_H/3*frand()+VIEWPORT_W*(_i&1), 100, Swirl, stage4_explosive, (1-2*(_i&1))*3+I);
-
 	AT(5300 + midboss_time)
 		global.boss = create_kurumi();
 
