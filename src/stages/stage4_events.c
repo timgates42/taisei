@@ -1258,7 +1258,7 @@ static int stage4_squad(Enemy *e, int t) {
 	if(t > timescale * 4)
 		return ACTION_DESTROY;
 		
-	FROM_TO(timescale, timescale*4, 40) {
+	FROM_TO(timescale/10, timescale*4, 20) {
 		play_sound("shot2");
 		int c = 3;
 		for(int i = 0; i < c; i++) {
@@ -1268,7 +1268,7 @@ static int stage4_squad(Enemy *e, int t) {
 				.rule = linear,
 				.color = RGBA(0.6,0.2,0.5,1),
 				.args = {
-					-e->args[3]*cexp(I*(i-c/2)*0.1*(idx+0.3*_i))/cabs(e->args[3]) * 3,
+					-e->args[3]*cexp(I*(i-c/2)*0.1*(idx+0.3*_i))/cabs(e->args[3]) * 4,
 				}
 				);
 		}
@@ -1292,18 +1292,17 @@ static int stage4_swirlster(Enemy *e, int t) {
 
 	squad_move(e, t, path_swirlster);
 
-	FROM_TO_INT(60, 1000, 60, 80, 30) {
+	FROM_TO_INT(30, 1000, 60, 80, 30) {
 		play_sound("shot3");
 		int c = 4;
 		for(int i = 0; i < c; i++) {
 			PROJECTILE(
 				.sprite = "card",
 				.color = RGB(0.2,0.8-0.2*_ni,0.5),
-				.pos = e->pos,
-				.rule = asymptotic,
+				.pos = e->pos+20*cexp(2*M_PI*I/c*_i),
+				.rule = linear,
 				.args = {
-					1*cexp(2*M_PI*I/c*(i+0.1*idx)),
-					5+2*I,
+					2*cexp(2*M_PI*I/c*(i+frand()+0.1*idx)),
 				},
 			);
 		}
@@ -1313,6 +1312,20 @@ static int stage4_swirlster(Enemy *e, int t) {
 
 static complex path_showreel(double t, complex pos0, complex *args) {
 	return -0.5*I+(pos0+0.5*I)*cexp(I*1.5*t*args[1]);
+}
+
+static int showreel_bullet(Projectile *p, int t) {
+	if(t < 0)
+		return ACTION_ACK;
+	TIMER(&t);
+
+	FROM_TO(100,105,1) {
+		if(creal(p->args[1]) > 0)
+			p->args[0] = 3*cexp(I*carg(global.plr.pos-p->pos));
+	}
+	
+	p->pos += p->args[0];
+	return ACTION_NONE;
 }
 
 static int stage4_showreel(Enemy *e, int t) {
@@ -1329,19 +1342,19 @@ static int stage4_showreel(Enemy *e, int t) {
 
 	squad_move(e, t, path_showreel);
 
-	FROM_TO_INT_SND("shot1_loop",60, 1000, 60, 80, 8) {
+	FROM_TO_INT_SND("shot1_loop",60, 1000, 60, 80, 15) {
 		
 		int c = 1;
 		for(int i = 0; i < c; i++) {
 			complex dir = e->args[3]/cabs(e->args[3])*cexp(2*M_PI*I/c*(i+0.1*idx));
 			PROJECTILE(
-				.sprite = _ni&1 ? "ball" : "bigball",
+				.sprite = _ni&1 ? "ball" : "plainball",
 				.color = RGB(0.0,0.5+0.02*_ni,0.8-0.01*_ni),
 				.pos = e->pos,
-				.rule = asymptotic,
+				.rule = showreel_bullet,
 				.args = {
 					2*dir,
-					2*(1+I)*dir,
+					_ni&1
 				},
 			);
 		}
@@ -1373,7 +1386,7 @@ static int stage4_memefairy(Enemy *e, int t) {
 				complex aim = cexp(2*M_PI*I*frand());
 
 
-				if(i % 3 == 0 && _i % 4 == 0) {
+				if(_i % 4 == 0) {
 					play_sound("redirect");
 					PROJECTILE(
 						.sprite = "bigball",
@@ -1381,21 +1394,23 @@ static int stage4_memefairy(Enemy *e, int t) {
 						.color = RGBA(0.5, 0.1, 0.7, 0),
 						.rule = linear,
 						.args = {
-							offset*aim*(2+0.04*sign*I),
-						}
-					);
-				} else {
-					PROJECTILE(
-						.sprite = "card",
-						.pos = e->pos,
-						.color = RGBA(0.2, 0.7-0.2*(i&1), 1-0.001*_i, 0),
-						.rule = accelerated,
-						.args = {
-							3*offset,
-							0.01*offset*I*sign,
+							offset*aim*(4),
 						}
 					);
 				}
+				if(sign > 0)
+					offset = conj(offset);
+				PROJECTILE(
+					.sprite = "card",
+					.pos = e->pos,
+					.color = RGBA(0.2, 0.7-0.2*(i&1), 1-0.001*_i, 0),
+					.rule = accelerated,
+					.args = {
+						3*offset,
+						0.01*offset*I*sign,
+					}
+				);
+
 					
 			}
 		}
@@ -1420,9 +1435,9 @@ void stage4_events(void) {
 		create_enemy1c(VIEWPORT_W + VIEWPORT_H/4*3*I, 3000, BigFairy, stage4_splasher, -3-4.0*I);
 	}
 
-	FROM_TO(580, 780, 20) {
+	FROM_TO(580, 880, 20) {
 		for(int sign = -1; sign <= 1; sign += 2) {
-			create_enemy2c(0, 2500, Fairy, stage4_squad, _i, sign);
+			create_enemy2c(0, 1200, Fairy, stage4_squad, _i, sign);
 		}
 	}
 
@@ -1435,7 +1450,7 @@ void stage4_events(void) {
 				create_enemy2c(x+100*I*wave, 1000, Swirl, stage4_swirlster, _i, direction+0.3*I);
 			}
 
-			FROM_TO(1950+30*wave, 2500, 30) {
+			FROM_TO(1950+30*wave, 2300, 30) {
 				double x = direction*(150 + 2*(50*wave+15*direction));
 				create_enemy2c(VIEWPORT_W/2+x-40*I, 1000, Fairy, stage4_showreel, _i, direction);
 			}
