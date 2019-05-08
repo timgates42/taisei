@@ -1238,6 +1238,7 @@ void stage1_events(void) {
 	AT(0) {
 		stage_start_bgm("stage1");
 		stage_set_voltage_thresholds(50, 125, 300, 600);
+		global.timer = 5000;
 	}
 
 #ifdef BULLET_TEST

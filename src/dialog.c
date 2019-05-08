@@ -54,7 +54,7 @@ void draw_dialog(Dialog *dialog) {
 	CullFaceMode cull_saved = r_cull_current();
 
 	r_mat_push();
-	r_mat_translate(VIEWPORT_W/2.0, VIEWPORT_H*3.0/4.0, 0);
+	r_mat_translate(VIEWPORT_W/2.0, 64, 0);
 
 	int i;
 	for(i = 0; i < 2; i++) {
@@ -86,9 +86,20 @@ void draw_dialog(Dialog *dialog) {
 			r_color3(1 - (dir>0)*0.7, 1 - (dir>0)*0.7, 1 - (dir>0)*0.7);
 		}
 
-		r_mat_translate(VIEWPORT_W*7.0/18.0, 0, 0);
-		if(dialog->images[i])
-			draw_sprite_batched_p(0, 0, dialog->images[i]);
+		if(dialog->images[i]) {
+			Sprite *s = dialog->images[1];
+			r_mat_translate((VIEWPORT_W - s->w)/2 + 32, VIEWPORT_H - s->h/2, 0);
+			draw_sprite_batched_p(0, 0, s);
+			r_state_push();
+			r_shader_standard_notex();
+			r_mat_push();
+			r_mat_scale(s->w, s->h, 1);
+			// r_mat_translate(0.5, 0.5, 0);
+			r_color4(0.2, 0.2, 0.2, 0.2);
+			// r_draw_quad();
+			r_mat_pop();
+			r_state_pop();
+		}
 		
 		r_mat_pop();
 
