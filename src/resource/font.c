@@ -957,6 +957,8 @@ static Font* font_from_params(const TextParams *params) {
 	return font;
 }
 
+#include "global.h"
+
 attr_nonnull(1, 2, 3)
 static double _text_ucs4_draw(Font *font, const uint32_t *ucs4text, const TextParams *params) {
 	SpriteParams sp = { .sprite = NULL };

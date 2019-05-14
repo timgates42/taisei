@@ -13,11 +13,26 @@
 #define M(side,message) dadd_msg(d,side,message)
 
 static void dialog_reimu_stage1_pre_boss(Dialog *d) {
+	/*
+	M(Left, "san asjiod jasodj iosadjd ioasjfio adjfioadj iofjadoi jadiof jioadfj ioasdjfoi jagfoij afiojg ioasfjgio  afsio jgioaf gjiofajsgio jasfio jfiosgj ioasdjfgo j gjaiofj ioajfsdgio jfgio jaio gjfioa gioafj gio");
+	*/
 	M(Left, "Good grief, it’s too early in the morning to be flying around.");
 	M(Right, "Hey, shrine maiden! Am I making you cold?");
 	M(Left, "Not as much as you’re just being a pest. I’m too busy to play games with fairies.");
 	M(Right, "That’s not true! It’s never too early to have fun!");
 	M(Right, "Prepare to catch an air conditioner cold on my ice playground!");
+	M(Left, "ur mom gay lmfao xD");
+	M(Right, "no actually ur dad lesbien tho m8 XDDDDDDDDD");
+	M(Left, "What the fuck did you just do to my shrine, you little bitch? I’ll have you know I graduated top of my class in the Fantasy Seals, and I’ve been involved in numerous secret raids on Moriya Shrine,");
+	M(Left, "and I have over 300 resolved incidents. I am trained in danmaku warfare and I’m the top miko in all of Gensokyo. You are nothing to me but just another lowly youkai.");
+	M(Left, "I will wipe you the fuck out with precision the likes of which has never been seen before on this Earth, mark my fucking words. You think you can get away with disturbing the Great Hakurei Barrier's guardian?");
+	M(Left, "Think again, fucker. As we speak I am contacting my secret network of fairies across the Youkai Mountain and your whereabouts are being traced right now so you better prepare for the Spellcard duel, maggot.");
+	M(Left, "The duel that resolves the pathetic little thing you call your incident. Welcome to the fucking Netherworld, kid.");
+	M(Left, "I can be anywhere, anytime, and I can exterminate you in over 700 ways, and that’s just with my gohei.");
+	M(Left, "Not only am I extensively trained in Spellcard combat, but I have access to an entire arsenal of Gods to summon and I will use it to its full extent to wipe your miserable ass off the face of reality.");
+	M(Left, "You little shit. If only you could have known what divine retribution your pathetic little incident was about to bring down upon you, maybe you would have held your fucking tongue.");
+	M(Left, "But you couldn’t, you didn’t, and now you’re paying the price, you goddamn idiot. I will shit fury all over you and you will drown in it. You’re fucking exterminated, kiddo.");
+	M(Right, "Yikes.");
 }
 
 static void dialog_reimu_stage1_post_boss(Dialog *d) {
