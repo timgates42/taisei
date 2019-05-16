@@ -931,6 +931,7 @@ void stage_draw_overlay(void) {
 
 	r_shader_standard();
 	stagetext_draw();
+	player_draw_overlay(&global.plr);
 	r_state_pop();
 }
 
