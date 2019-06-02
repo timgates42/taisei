@@ -48,6 +48,7 @@ typedef enum RendererCapability {
 	RCAP_DEPTH_TEST,
 	RCAP_DEPTH_WRITE,
 	RCAP_CULL_FACE,
+	RCAP_WIREFRAME,
 
 	NUM_RCAPS
 } RendererCapability;

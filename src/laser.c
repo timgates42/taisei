@@ -18,6 +18,7 @@
 
 static struct {
 	VertexArray *varr;
+	VertexArray *varr_generic;
 	VertexBuffer *vbuf;
 	ShaderProgram *shader_generic;
 	Model quad_generic;
@@ -29,6 +30,12 @@ typedef struct LaserInstancedAttribs {
 	float pos[2];
 	float delta[2];
 } LaserInstancedAttribs;
+
+typedef struct LaserGenericAttribs {
+	float pos[2];
+	float uv[2];
+	int id;
+} LaserGenericAttribs;
 
 static void lasers_ent_predraw_hook(EntityInterface *ent, void *arg);
 static void lasers_ent_postdraw_hook(EntityInterface *ent, void *arg);
@@ -65,10 +72,21 @@ void lasers_preload(void) {
 
 	lasers.varr = r_vertex_array_create();
 	r_vertex_array_set_debug_label(lasers.varr, "Lasers vertex array");
-	r_vertex_array_layout(lasers.varr, sizeof(fmt)/sizeof(VertexAttribFormat), fmt);
 	r_vertex_array_attach_vertex_buffer(lasers.varr, r_vertex_buffer_static_models(), 0);
 	r_vertex_array_attach_vertex_buffer(lasers.varr, lasers.vbuf, 1);
 	r_vertex_array_layout(lasers.varr, sizeof(fmt)/sizeof(VertexAttribFormat), fmt);
+
+	VertexAttribFormat fmt_generic[] = {
+		// Per-vertex attributes
+		{ { 2, VA_FLOAT, VA_CONVERT_FLOAT, 0 }, sizeof(LaserGenericAttribs), offsetof(LaserGenericAttribs, pos), 0 },
+		{ { 2, VA_FLOAT, VA_CONVERT_FLOAT, 0 }, sizeof(LaserGenericAttribs), offsetof(LaserGenericAttribs, uv),  0 },
+		{ { 1, VA_INT,   VA_CONVERT_INT,   0 }, sizeof(LaserGenericAttribs), offsetof(LaserGenericAttribs, id),  0 },
+	};
+
+	lasers.varr_generic = r_vertex_array_create();
+	r_vertex_array_set_debug_label(lasers.varr_generic, "Lasers vertex array (generic)");
+	r_vertex_array_attach_vertex_buffer(lasers.varr_generic, lasers.vbuf, 0);
+	r_vertex_array_layout(lasers.varr_generic, sizeof(fmt_generic)/sizeof(VertexAttribFormat), fmt_generic);
 
 	FBAttachmentConfig cfg;
 	memset(&cfg, 0, sizeof(cfg));
@@ -227,40 +245,169 @@ static void draw_laser_curve_generic(Laser *l) {
 		return;
 	}
 
+	Sprite *spr = get_sprite("proj/wave");
+	uint tw, th;
+	r_texture_get_size(spr->tex, 0, &tw, &th);
+
 	r_shader_ptr(lasers.shader_generic);
-	r_color(&l->color);
-	r_uniform_sampler("tex", "part/lasercurve");
-	r_uniform_float("timeshift", timeshift);
-	r_uniform_float("width", l->width);
-	r_uniform_float("width_exponent", l->width_exponent);
-	r_uniform_int("span", instances);
+	// r_color(&l->color);
+	r_uniform_sampler("u_texture", spr->tex);
+	r_uniform_vec4("u_lasers[0].textureRegion", spr->tex_area.x/tw, spr->tex_area.y/th, spr->tex_area.w/tw, spr->tex_area.h/th);
+	r_uniform_vec4_rgba("u_lasers[0].color", RGBA(l->color.r, l->color.g, l->color.b, 1));
 
 	SDL_RWops *stream = r_vertex_buffer_get_stream(lasers.vbuf);
 	r_vertex_buffer_invalidate(lasers.vbuf);
 
-	for(uint i = 0; i < instances; ++i) {
-		complex pos = l->prule(l, i * 0.5 + timeshift);
-		complex delta = pos - l->prule(l, i * 0.5 + timeshift - 0.1);
+//	float w = l->width * (0.1 + 2.9 * psin(global.frames / 120.0));
+	float w = l->width * 3;
 
-		LaserInstancedAttribs attr;
-		attr.pos[0] = creal(pos);
-		attr.pos[1] = cimag(pos);
-		attr.delta[0] = creal(delta);
-		attr.delta[1] = cimag(delta);
-		SDL_RWwrite(stream, &attr, sizeof(attr), 1);
+	double tex_coord = 0;
+	float normal_sign = 1;
+
+	complex prev = NAN, normal, prevdir = NAN, prev_normal = NAN;
+
+	float step = 25;
+
+	Model mdl = { 0 };
+	mdl.vertex_array = lasers.varr_generic;
+	mdl.primitive = PRIM_TRIANGLE_STRIP;
+	mdl.primitive = PRIM_LINE_STRIP;
+
+	LaserGenericAttribs vert = { 0 };
+
+	r_disable(RCAP_CULL_FACE);
+//	r_enable(RCAP_WIREFRAME);
+	r_cull(CULL_FRONT);
+
+	uint vlimit = (global.frames / 60) % 100;
+//	vlimit = 1000000000;
+
+	for(float i = 0; i < instances; i += step) {
+		float x = i * 0.5 + timeshift;
+		float h = 0.5;
+
+		complex pos = l->prule(l, x);
+		complex XpH = l->prule(l, x + h);
+		complex XmH = l->prule(l, x - h);
+
+		complex dir = (XpH - XmH) / (2 * h);
+		complex dir2 = (XpH + XmH - 2*pos) / (h * h);
+		double curvrad = pow(creal(dir) * creal(dir) + cimag(dir) * cimag(dir), 3.0 / 2.0) / (creal(dir)*cimag(dir2) - cimag(dir)*creal(dir2));
+
+		// log_debug("curvrad(%f) = %f", x, curvrad);
+
+		/*
+		if(isnan(creal(prev))) {
+			prev = l->prule(l, i * 0.5 + timeshift - 0.1);
+		}
+
+		complex dir = pos - prev;
+		*/
+
+		double len = cabs(dir);
+
+		normal = normal_sign * CMPLX(-cimag(dir), creal(dir)) / len;
+		complex vpos;
+
+		if(isnan(creal(prev_normal))) {
+			prev_normal = normal;
+		}
+
+#if 1
+		LaserGenericAttribs verts[2] = { 0 };
+
+		double wtf;
+		wtf = curvrad < 0 ? clamp(-curvrad/2, 0, w) : w;
+
+		vpos = pos - normal * w;
+		verts[0].pos[0] = creal(vpos);
+		verts[0].pos[1] = cimag(vpos);
+		verts[0].uv[0] = 0;
+		verts[0].uv[1] = tex_coord;
+		++mdl.num_vertices;
+		SDL_RWwrite(stream, &verts[0], sizeof(verts[0]), 1);
+
+		if(mdl.num_vertices > vlimit) {
+			break;
+		}
+
+		wtf = curvrad > 0 ? clamp(curvrad/2, 0, w) : w;
+
+		vpos = pos + normal * w;
+		verts[1].pos[0] = creal(vpos);
+		verts[1].pos[1] = cimag(vpos);
+		verts[1].uv[0] = 1;
+		verts[1].uv[1] = tex_coord;
+		++mdl.num_vertices;
+		SDL_RWwrite(stream, &verts[1], sizeof(verts[1]), 1);
+
+		if(mdl.num_vertices > vlimit) {
+			break;
+		}
+#else
+		normal_sign *= -1;
+
+		if(i == 0) {
+			vpos = pos - normal * w;
+			vert.pos[0] = creal(vpos);
+			vert.pos[1] = cimag(vpos);
+			vert.uv[0] = normal_sign < 0;
+			vert.uv[1] = tex_coord;
+			SDL_RWwrite(stream, &vert, sizeof(vert), 1);
+			++mdl.num_vertices;
+		}
+
+		vpos = pos + normal * w;
+
+		vert.pos[0] = creal(vpos);
+		vert.pos[1] = cimag(vpos);
+		vert.uv[0] = normal_sign > 0;
+		vert.uv[1] = tex_coord;
+		SDL_RWwrite(stream, &vert, sizeof(vert), 1);
+		++mdl.num_vertices;
+
+		if(mdl.num_vertices > vlimit) {
+			log_debug("%zu   [%i]", mdl.num_vertices, instances);
+			break;
+		}
+#endif
+
+		tex_coord += (float)step / (instances - 1);
+
+		prev = pos;
+		prevdir = dir;
+		prev_normal = normal;
 	}
 
-	r_draw_model_ptr(&lasers.quad_generic, instances, 0);
+	if(mdl.num_vertices > 0) {
+		/*
+		complex vpos = prev - normal * w;
+		vert.pos[0] = creal(vpos);
+		vert.pos[1] = cimag(vpos);
+		vert.uv[0] = normal_sign < 0;
+		vert.uv[1] = tex_coord;
+		SDL_RWwrite(stream, &vert, sizeof(vert), 1);
+		++mdl.num_vertices;
+		*/
+		r_draw_model_ptr(&mdl, 1, 0);
+	}
 }
 
 static void ent_draw_laser(EntityInterface *ent) {
 	Laser *laser = ENT_CAST(ent, Laser);
 
+	r_state_push();
+#if 0
 	if(laser->shader) {
 		draw_laser_curve_specialized(laser);
 	} else {
 		draw_laser_curve_generic(laser);
 	}
+#else
+	draw_laser_curve_specialized(laser);
+	draw_laser_curve_generic(laser);
+#endif
+	r_state_pop();
 }
 
 static void lasers_ent_predraw_hook(EntityInterface *ent, void *arg) {

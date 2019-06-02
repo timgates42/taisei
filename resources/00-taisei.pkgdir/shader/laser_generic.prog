@@ -1,1 +1,1 @@
-objects = laser_generic.vert standard.frag
+objects = laser_generic.vert laser_generic.frag

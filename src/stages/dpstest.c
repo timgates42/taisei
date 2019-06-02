@@ -57,16 +57,44 @@ static void stage_dpstest_boss_rule(Boss *b, int t) {
 		double x = pow((b->current->maxhp - b->current->hp) / b->current->maxhp, 0.75) * b->current->maxhp;
 		b->current->hp = clamp(b->current->hp + x * 0.0025, b->current->maxhp * 0.05, b->current->maxhp);
 	}
-
-#if 0
-	if(!(t % 500)) {
-		create_laserline_ab(VIEWPORT_W/3, VIEWPORT_W/3+VIEWPORT_H*I, 10 + 20 * frand(), 20, 500, RGBA(2, 0, 0, 0))->unclearable = true;
-	}
-#endif
 }
 
 static void stage_dpstest_boss_events(void) {
 	TIMER(&global.timer);
+
+#if 1
+	if(!global.lasers.first) {
+		// create_laserline_ab(VIEWPORT_W/3, VIEWPORT_W/3+VIEWPORT_H*I, 10 + 20 * frand(), 20, 500, RGBA(2, 0, 0, 0))->unclearable = true;
+
+		// create_lasercurve4c(VIEWPORT_W/4, 250, VIEWPORT_H/2, HSLA(frand(), 0.5, 0.5, 0.0), las_sine, 2*I, 20, 0.1, global.frames/M_PI);
+		// Laser *l = create_lasercurve4c(VIEWPORT_W/2+VIEWPORT_H/2*I, 50, 90000, HSLA(frand(), 0.5, 0.5, 0.0), las_circle, M_PI*0.5, 128, 0, 0);
+		// l->width = 64;
+		// Laser *l = create_lasercurve4c(VIEWPORT_W/4, 250, VIEWPORT_H/2, HSLA(frand(), 0.5, 0.5, 0.0), las_sine, 2*I, 20, 0.1, global.frames/M_PI);
+		// l->timeshift = l->timespan;
+		// l->width *= 3;
+
+		/*
+		Laser *l = create_laserline_ab(VIEWPORT_W/3, VIEWPORT_W/3+VIEWPORT_H*I, 64, 20, 5000, RGBA(2, 0, 0, 0));
+		l->prule = las_sine;
+		memcpy(l->args, (complex[4]) { 2*I, 20, 0.1, global.frames/M_PI }, sizeof(l->args));
+		*/
+
+		Laser *l = create_laser(VIEWPORT_W/4 + 42*I, 250, 900000000, RGBA(0.5, 0.2, 1, 0), las_sine, NULL, 2*I, 60, 0.05, 0);
+		l->width = 16;
+		l->speed = 0;
+		l->timeshift = l->timespan;
+		l->unclearable = true;
+
+		/*
+		l = create_lasercurve4c(2*VIEWPORT_W/3+VIEWPORT_H/2*I, 50, 90000, HSLA(frand(), 0.5, 0.5, 0.0), las_circle, M_PI*2, 64, 0, 0);
+		l->width = 8;
+		l->speed = 0;
+		l->timeshift = l->timespan;
+		l->unclearable = true;
+		*/
+	}
+	return;
+#endif
 
 	AT(0) {
 		global.boss = create_boss("Baka", "cirno", NULL, BOSS_DEFAULT_GO_POS);

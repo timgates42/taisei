@@ -2,20 +2,12 @@
 
 #include "lib/render_context.glslh"
 #include "lib/util.glslh"
-#include "interface/standard.glslh"
-
-ATTRIBUTE(3) vec4 instance_pos_delta;
-
-UNIFORM(1) float timeshift;
-UNIFORM(2) float width;
-UNIFORM(3) float width_exponent;
-UNIFORM(4) int span;
-
-#include "lasers/vertex_pos.glslh"
+#include "interface/laser_generic.glslh"
 
 void main(void) {
-    vec2 pos     = laser_vertex_pos(instance_pos_delta.xy, instance_pos_delta.zw);
-    gl_Position  = r_modelViewMatrix * r_projectionMatrix * vec4(pos, 0.0, 1.0);
-    texCoord     = (r_textureMatrix * vec4(texCoordRawIn, 0.0, 1.0)).xy;
-    texCoordRaw  = texCoordRawIn;
+	gl_Position = r_projectionMatrix * r_modelViewMatrix * vec4(a_position.x, a_position.y, 0.0, 1.0);
+	v_laserID = a_laserID;
+	v_texCoordRaw = a_texCoord;
+	v_texCoord = uv_to_region(u_lasers[a_laserID].textureRegion, a_texCoord);
+	v_color = u_lasers[a_laserID].color;
 }

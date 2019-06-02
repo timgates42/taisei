@@ -317,6 +317,10 @@ static void gl33_apply_capability(RendererCapability cap, bool value) {
 			(value ? glEnable : glDisable)(GL_CULL_FACE);
 			break;
 
+		case RCAP_WIREFRAME:
+			glPolygonMode(GL_FRONT_AND_BACK, value ? GL_LINE : GL_FILL);
+			break;
+
 		default: UNREACHABLE;
 	}
 }
