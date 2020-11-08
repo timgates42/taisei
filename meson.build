@@ -10,6 +10,9 @@ project('taisei', 'c',
 
         'koishi:threadsafe=false',
 
+        'cglm:install=false',
+        'cglm:build_tests=false',
+
         'libzip:enable_bzip2=false',
         'libzip:enable_crypto=false',
         'libzip:enable_lzma=false',
@@ -145,11 +148,11 @@ dep_webpdecoder = dependency('libwebpdecoder', version : '>=0.5',   required : f
 dep_zip         = dependency('libzip',         version : '>=1.2',   required : false, static : static, fallback : ['libzip', 'libzip_dep'])
 dep_zlib        = dependency('zlib',                                required : true,  static : static, fallback : ['zlib', 'zlib_dep'])
 dep_crypto      = dependency('libcrypto',                           required : false, static : static)
+dep_cglm        = dependency('cglm',           version : '>=0.7.8', required : true,  static : static, fallback : ['cglm', 'cglm_dep'])
 
 dep_m           = cc.find_library('m', required : false)
 
 dep_basisu_transcoder = subproject('basis_universal').get_variable('basisu_transcoder_dep')
-dep_cglm        = subproject('cglm').get_variable('cglm_dep')
 dep_glad        = subproject('glad').get_variable('glad_dep')
 dep_koishi      = subproject('koishi').get_variable('koishi_dep')
 
