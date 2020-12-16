@@ -17,7 +17,7 @@ on:
       - "**.yaml"
 
 jobs:
-  linux:
+  linux-test-build:
     runs-on: ubuntu-20.04 # so we're not using ancient tools
     steps:
     - name: Checkout Code
@@ -51,8 +51,8 @@ jobs:
         name: taisei_linux_fail_log
         path: build/meson-logs/meson-log.txt
 
-  macos:
-    runs-on: macos-latest
+  macos-test-build:
+    runs-on: macos-10.15
     steps:
     - name: Checkout Code
       uses: actions/checkout@v2
