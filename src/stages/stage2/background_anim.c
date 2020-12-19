@@ -14,17 +14,27 @@
 #include "coroutine.h"
 
 TASK(animate_bg_fullstage, NO_ARGS) {
-	stage_3d_context.cx[2] = 1000;
-	stage_3d_context.cx[0] = -850;
-	stage_3d_context.crot[0] = 60;
+	//stage_3d_context.cx[2] = 10;
+	//stage_3d_context.cx[0] = 0;
+	//stage_3d_context.crot[0] = 20;
+	////stage_3d_context.crot[2] = -90;
+	//stage_3d_context.cv[1] = 0.05;
+
+	
+	stage_3d_context.cx[2] = 10;
+	stage_3d_context.cx[0] = 10;
+	stage_3d_context.crot[0] = 50;
 	stage_3d_context.crot[2] = -90;
-	stage_3d_context.cv[0] = 9;
+	stage_3d_context.cv[0] = -0.1;
 
 	for(;;) {
 		YIELD;
-		fapproach_p(&stage_3d_context.cv[0], 0.0f, 0.05f);
-		fapproach_p(&stage_3d_context.cv[1], 9.0f, 0.05f);
-		stage_3d_context.crot[2] += fmin(0.5f, -stage_3d_context.crot[2] * 0.02f);
+		
+		fapproach_p(&stage_3d_context.crot[0], 20, 0.1f);
+		fapproach_p(&stage_3d_context.crot[2], 0.0f, 0.2f);
+		fapproach_p(&stage_3d_context.cv[0], 0.0f, 0.0005f);
+		fapproach_p(&stage_3d_context.cv[1], 0.05f, 0.01f);
+		//stage_3d_context.crot[2] += fmin(0.5f, -stage_3d_context.crot[2] * 0.02f);
 		stage3d_update(&stage_3d_context);
 	}
 }
@@ -34,10 +44,11 @@ void stage2_bg_init_fullstage(void) {
 }
 
 TASK(animate_bg_spellpractice, NO_ARGS) {
-	stage_3d_context.cx[2] = 1000;
-	stage_3d_context.cx[0] = -44.5;
-	stage_3d_context.crot[0] = 60;
-	stage_3d_context.cv[1] = 9;
+	stage_3d_context.cx[2] = 10;
+	stage_3d_context.cx[0] = 0;
+	stage_3d_context.crot[0] = 20;
+	stage_3d_context.cv[1] = 0.05;
+
 
 	for(;;) {
 		YIELD;
